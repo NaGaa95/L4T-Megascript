@@ -57,8 +57,8 @@ megascript_start_time=$(date +%s)
 
 #allow developer to set repository username and branch
 #developers use export repository_username= and export repository_branch= for your own github username and branch of the L4T-Megascript
-if [ -v $repository_username ] || [ $repository_username == cobalt2727 ]; then
-  export repository_username=cobalt2727
+if [ -v $repository_username ] || [ $repository_username == NaGaa95 ]; then
+  export repository_username=NaGaa95
 else
   echo "Developer Mode Enabled! Repository = $repository_username"
 fi

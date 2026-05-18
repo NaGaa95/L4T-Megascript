@@ -42,8 +42,20 @@ Raspbian | Debian | Ubuntu)
   esac
 
   # refer to https://github.com/azahar-emu/azahar/blob/d59ea25cbe75161fd90f7f5cd56279176d456d2d/src/common/dynamic_library/ffmpeg.h#L7-L16 for required ffmpeg development headers
-  sudo apt-get install git libsdl2-2.0-0 libsdl2-dev qt6-base-dev qt6-base-private-dev libqt6opengl6-dev qt6-multimedia-dev libqt6multimedia6 qt6-l10n-tools libfdk-aac-dev build-essential cmake libswscale-dev libavformat-dev libavcodec-dev libavfilter-dev libssl-dev glslang-tools glslang-dev spirv-tools spirv-headers -y || error "Could not install dependencies"
+  sudo apt-get install git libsdl2-2.0-0 libsdl2-dev libfdk-aac-dev build-essential cmake libswscale-dev libavformat-dev libavcodec-dev libavfilter-dev libssl-dev glslang-tools glslang-dev spirv-tools spirv-headers -y || error "Could not install dependencies"
 
+  qt_version=6.11.1
+  if [ "$(/usr/local/qt6/bin/qmake -query QT_VERSION 2>/dev/null)" != "$qt_version" ]; then
+    echo "Downloading prebuilt Qt $qt_version for aarch64..."
+    curl -L --fail \
+      "https://raw.githubusercontent.com/$repository_username/L4T-Megascript/$repository_branch/assets/qt/qt-$qt_version-aarch64.tar.xz" \
+      -o /tmp/qt6-aarch64.tar.xz || error "Failed to download prebuilt Qt6"
+    sudo mkdir -p /usr/local/qt6
+    sudo tar -xJf /tmp/qt6-aarch64.tar.xz -C /usr/local/qt6 --strip-components=1 \
+      || error "Failed to extract Qt6"
+    rm /tmp/qt6-aarch64.tar.xz
+  fi
+  export PATH="/usr/local/qt6/bin:/usr/local/qt6/libexec:$PATH"
   ;;
 
 Fedora)
@@ -70,10 +82,10 @@ cd build
 rm -rf CMakeCache.txt
 case "$__os_codename" in
 bionic | focal)
-  cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_OPENGL=ON -DCMAKE_CXX_FLAGS=-mcpu=native -DCMAKE_C_FLAGS=-mcpu=native -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DUSE_SYSTEM_GLSLANG=ON -DSIRIT_USE_SYSTEM_SPIRV_HEADERS=ON
+  cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/usr/local/qt6 -DCMAKE_INSTALL_RPATH=/usr/local/qt6/lib -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON -DENABLE_OPENGL=ON -DCMAKE_CXX_FLAGS=-mcpu=native -DCMAKE_C_FLAGS=-mcpu=native -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DUSE_SYSTEM_GLSLANG=ON -DSIRIT_USE_SYSTEM_SPIRV_HEADERS=ON
   ;;
 *)
-  cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_OPENGL=ON -DCMAKE_CXX_FLAGS=-mcpu=native -DCMAKE_C_FLAGS=-mcpu=native -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DUSE_SYSTEM_GLSLANG=ON -DSIRIT_USE_SYSTEM_SPIRV_HEADERS=ON
+  cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/usr/local/qt6 -DCMAKE_INSTALL_RPATH=/usr/local/qt6/lib -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON -DENABLE_OPENGL=ON -DCMAKE_CXX_FLAGS=-mcpu=native -DCMAKE_C_FLAGS=-mcpu=native -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DUSE_SYSTEM_GLSLANG=ON -DSIRIT_USE_SYSTEM_SPIRV_HEADERS=ON
   ;;
 esac
 if [ "$?" != 0 ]; then

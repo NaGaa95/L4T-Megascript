@@ -1,75 +1,99 @@
 #!/bin/bash
 
-clear -x
-echo "Xemu script started!"
+function error {
+  echo -e "\\e[91m$1\\e[39m"
+  sleep 3
+  exit 1
+}
 
-# Install dependencies
-case "$__os_codename" in
-bionic)
-  # ppa that contains libslirp
-  ubuntu_ppa_installer "theofficialgman/melonds-depends" || error "PPA failed to install"
-  ;;
-noble)
-  sudo apt install -y python3-venv || error "Could not install dependencies!"
-  ;;
-esac
+clear -x
+echo "Xemu (Original Xbox emulator) script started!"
+echo "Source: https://github.com/xemu-project/xemu"
+sleep 3
+
+echo "Installing dependencies..."
+
 case "$__os_id" in
 Raspbian | Debian | Ubuntu)
-  sudo apt install -y git build-essential cmake libsdl2-dev libcurl4-gnutls-dev libepoxy-dev libpixman-1-dev libgtk-3-dev libssl-dev libsamplerate0-dev libpcap-dev ninja-build python3-pip python3-tomli python3-yaml libslirp-dev libvulkan-dev python3-setuptools build-essential libaio-dev libslirp-dev libglu1-mesa-dev || error "Could not install dependencies!"
-  #this script updates SDL2 for aarch64 devices and does nothing for others
+  case "$__os_codename" in
+  bionic)
+    ubuntu_ppa_installer "theofficialgman/melonds-depends" || error "PPA failed to install"
+    ubuntu_ppa_installer "deadsnakes/ppa" || error "PPA failed to install"
+    ubuntu_ppa_installer "ubuntu-toolchain-r/test" || error "PPA failed to install"
+    sudo apt install -y python3.8 python3-pip gcc-13 g++-13 \
+      || error "Could not install dependencies!"
+    ;;
+  noble)
+    sudo apt install -y python3-venv || error "Could not install dependencies!"
+    ;;
+  esac
+
+  sudo apt install -y git curl build-essential cmake libsdl2-dev libcurl4-gnutls-dev \
+    libepoxy-dev libpixman-1-dev libgtk-3-dev libssl-dev libsamplerate0-dev \
+    libpcap-dev ninja-build python3-pip python3-tomli python3-yaml libslirp-dev \
+    libvulkan-dev libpipewire-0.3-dev libaio-dev libglu1-mesa-dev \
+    || error "Could not install dependencies!"
+
   bash -c "$(curl -s https://raw.githubusercontent.com/$repository_username/L4T-Megascript/$repository_branch/scripts/sdl2_install_helper.sh)"
   ;;
 Fedora)
-  sudo dnf install -y --refresh git libdrm-devel libslirp-devel mesa-libGLU-devel gtk3-devel libpcap-devel libsamplerate-devel libaio-devel SDL2-devel libepoxy-devel pixman-devel gcc-c++ ninja-build openssl-devel python3-pyyaml || error "Could not install dependencies!"
+  sudo dnf install -y --refresh @development-tools git cmake gcc-c++ ninja-build \
+    pkgconf-pkg-config libdrm-devel libslirp-devel mesa-libGLU-devel gtk3-devel \
+    libpcap-devel libsamplerate-devel libaio-devel SDL2-devel libepoxy-devel \
+    pixman-devel openssl-devel python3-pyyaml python3-tomli libcurl-devel \
+    vulkan-loader-devel glslang-devel spirv-tools-devel pipewire-devel \
+    || error "Could not install dependencies!"
   ;;
 *)
-  echo -e "\\e[91mUnknown distro detected - this script should work, but please press Ctrl+C now and install necessary dependencies yourself following https://wiki.dolphin-emu.org/index.php?title=Building_Dolphin_on_Linux if you haven't already...\\e[39m"
+  echo -e "\\e[91mUnknown distro detected - install Xemu dependencies manually\\e[39m"
   sleep 5
   ;;
 esac
 
-# Clone and build
+echo "Cloning Xemu..."
 cd ~
-git clone https://github.com/mborgerson/xemu.git -j$(nproc) #not including all submodules on this, the folder is over 2 GB if I do -cobalt
-cd xemu || error "Couldn't download source code!"
-#do this to make my weird python changing later less likely to break things, hopefully
-git reset --hard
-git pull --recurse-submodules -j$(nproc) || error "Couldn't pull latest source code!"
-git submodule update --init genconfig/ tomlplusplus/ #may be needed to manually specify on other systems?
+[ -d xemu ] || git clone --recurse-submodules -j$(nproc) https://github.com/xemu-project/xemu.git || error "Could not clone Xemu"
+cd xemu || error "Could not enter Xemu source directory"
+git pull --recurse-submodules -j$(nproc) || error "Could not pull latest source"
+git submodule update --init --recursive || error "Could not update submodules"
 
+echo "Building Xemu..."
+export CFLAGS="-mcpu=native ${CFLAGS:-}"
+export CXXFLAGS="-mcpu=native ${CXXFLAGS:-}"
+xemu_build_args=("--enable-lto")
+sed -i "s|libglslang = dependency('glslang', version: '>=15.0.0', required: false)|libglslang = declare_dependency(link_args: ['-Wl,--start-group', '-lglslang', '-lSPIRV-Tools-opt', '-lSPIRV-Tools', '-Wl,--end-group'])|" meson.build
+rm -rf build dist
 case "$__os_codename" in
 bionic)
-  ubuntu_ppa_installer "deadsnakes/ppa" || error "PPA failed to install"
-  ubuntu_ppa_installer "ubuntu-toolchain-r/test" || error "PPA failed to install"
-  sudo apt install python3.8 python3-pip gcc-13 g++-13 -y || error "Could not install dependencies!" #GCC 9 (the 20.04 default) also works, I'm just using 11 to future-proof -cobalt
-  sed -i -e 's/python3 /python3.8 /g' build.sh                      #this is hacky, yes, but hey, it works
-  python3.8 -m pip install --upgrade pip
-  source ~/.bashrc
-  python3.8 -m pip install --upgrade meson PyYAML
-  source ~/.bashrc
-  CFLAGS=-mcpu=native CXXFLAGS=-mcpu=native CC=gcc-13 CXX=g++-13 ./build.sh || error "Compilation failed!"
+  sed -i -e 's/python3 /python3.8 /g' build.sh
+  python3.8 -m pip install --upgrade pip meson PyYAML
+  CC=gcc-13 CXX=g++-13 ./build.sh "${xemu_build_args[@]}" || error "Build failed"
   ;;
 *)
-  python3 -m pip install --upgrade pip PyYAML
-  #./build.sh
-  CFLAGS=-mcpu=native CXXFLAGS=-mcpu=native ./build.sh || error "Compilation failed!" #I don't think CXXFLAGS actually gets used, but I'm leaving it there in case the build script ever takes it into account
+  ./build.sh "${xemu_build_args[@]}" || error "Build failed"
   ;;
 esac
 
-cd ~
-#install xemu itself
-sudo install -D xemu/dist/xemu /usr/local/bin/xemu
-#install icons for .desktop files
-sudo install -m 644 -D xemu/ui/icons/xemu.svg /usr/local/share/icons/hicolor/scalable/apps/xemu.svg
+binary="$HOME/xemu/dist/xemu"
+[ -x "$binary" ] || error "Build did not produce a xemu binary at $binary"
 
-sudo install -m 644 -D xemu/ui/icons/xemu_128x128.png /usr/local/share/icons/hicolor/128x128/apps/xemu.png #128
-sudo install -m 644 -D xemu/ui/icons/xemu_16x16.png /usr/local/share/icons/hicolor/16x16/apps/xemu.png     #16
-sudo install -m 644 -D xemu/ui/icons/xemu_24x24.png /usr/local/share/icons/hicolor/24x24/apps/xemu.png     #24
-sudo install -m 644 -D xemu/ui/icons/xemu_256x256.png /usr/local/share/icons/hicolor/256x256/apps/xemu.png #256
-sudo install -m 644 -D xemu/ui/icons/xemu_32x32.png /usr/local/share/icons/hicolor/32x32/apps/xemu.png     #32
-sudo install -m 644 -D xemu/ui/icons/xemu_48x48.png /usr/local/share/icons/hicolor/48x48/apps/xemu.png     #48
-sudo install -m 644 -D xemu/ui/icons/xemu_512x512.png /usr/local/share/icons/hicolor/512x512/apps/xemu.png #512
-sudo install -m 644 -D xemu/ui/icons/xemu_64x64.png /usr/local/share/icons/hicolor/64x64/apps/xemu.png     #64
+sudo install -Dm755 "$binary" /usr/local/bin/xemu
+sudo install -Dm644 "$HOME/xemu/ui/icons/xemu.svg" \
+  /usr/local/share/icons/hicolor/scalable/apps/xemu.svg
 
-#install .desktop file itself
-sudo install -m 644 -D xemu/ui/xemu.desktop /usr/local/share/applications/xemu.desktop
+for size in 16 24 32 48 64 128 256 512; do
+  sudo install -Dm644 "$HOME/xemu/ui/icons/xemu_${size}x${size}.png" \
+    "/usr/local/share/icons/hicolor/${size}x${size}/apps/xemu.png"
+done
+
+sudo install -Dm644 "$HOME/xemu/ui/xemu.desktop" \
+  /usr/local/share/applications/xemu.desktop
+sudo sed -i 's|^Exec=.*|Exec=/usr/local/bin/xemu %f|' \
+  /usr/local/share/applications/xemu.desktop
+grep -q '^TryExec=' /usr/local/share/applications/xemu.desktop \
+  || sudo sed -i '/^Exec=/a TryExec=/usr/local/bin/xemu' \
+    /usr/local/share/applications/xemu.desktop
+
+echo "Done!"
+echo "Sending you back to the main menu..."
+sleep 5
