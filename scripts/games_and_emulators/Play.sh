@@ -22,6 +22,7 @@ Raspbian | Debian | Ubuntu)
 Fedora)
   sudo dnf install -y --refresh @development-tools git cmake \
     qt6-qtbase-devel freealut-devel openal-soft-devel libevdev-devel sqlite-devel \
+    libstdc++-static \
     || error "Could not install dependencies!"
   ;;
 *)

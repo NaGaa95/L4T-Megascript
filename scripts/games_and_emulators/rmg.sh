@@ -64,7 +64,7 @@ Raspbian | Debian | Ubuntu)
   export PATH="/usr/local/qt6/bin:/usr/local/qt6/libexec:$PATH"
   ;;
 Fedora)
-  sudo dnf install -y --refresh --disablerepo='getpagespeed*' \
+  sudo dnf install -y --refresh \
     @development-tools git cmake ninja-build gcc-c++ nasm pkgconfig \
     libusb1-devel hidapi-devel libsamplerate-devel speexdsp-devel \
     minizip-compat-devel SDL3-devel freetype-devel \
