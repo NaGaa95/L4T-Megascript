@@ -104,6 +104,8 @@ fn="Barrier";;d="Share your mouse and keyboard between multiple computers";;sn="
 
 fn="KeePassXC";;d="A modern, secure, and open-source password manager that stores and manages your most sensitive information.";;sn="KeePassXC.sh";;f="extras"
 
+fn="lsfg-vk";;d="Lossless Scaling Frame Generation Vulkan layer (Tegra X1 fork, requires Lossless.dll)";;sn="lsfg-vk.sh";;f="extras";;blacklist="x86_64"
+
 # fn="Piper";;d="Graphical application to configure input devices, mostly gaming mice";;sn="piper.sh";;f="extras"
 
 # fn="PrusaSlicer";;d="PrusaSlicer is an open-source, feature-rich, frequently updated tool for 3D Printing";;sn="prusaslicer.sh";;f="extras"
