@@ -26,7 +26,7 @@ Fedora)
   sudo dnf install -y --refresh @development-tools git \
     autoconf automake libtool pkgconf-pkg-config curl cmake ninja-build \
     clang clang-tools-extra gtk3-devel zip unzip tar \
-    kernel-headers perl-IPC-Cmd perl-FindBin libicns-utils \
+    perl-IPC-Cmd perl-FindBin libicns-utils \
     || error "Could not install dependencies!"
   ;;
 *)

@@ -89,17 +89,13 @@ esac
 rm -rf "dep/prebuilt/$deps_target/lib/cmake/Qt6"* \
        "dep/prebuilt/$deps_target/include/Qt"* \
        "dep/prebuilt/$deps_target/lib/libQt6"*
-case "$__os_id" in
-Raspbian | Debian | Ubuntu)
-  sed -i \
-    -e "s|Qt6 [0-9.]\\+ REQUIRED|Qt6 $qt_version REQUIRED|g" \
-    -e '\|NO_DEFAULT_PATH PATHS "${DEPS_PATH}/lib/cmake/Qt6"$|d' \
-    -e '/Have to verify it down here/,/^endif()$/d' \
-    CMakeModules/DuckStationDependencies.cmake
-  grep -q 'Using incorrect Qt library' CMakeModules/DuckStationDependencies.cmake \
-    && error "Failed to patch DuckStationDependencies.cmake - upstream layout may have changed"
-  ;;
-esac
+sed -i \
+  -e 's|Qt6 [0-9.]\+ REQUIRED|Qt6 6.10.0 REQUIRED|g' \
+  -e '\|NO_DEFAULT_PATH PATHS "${DEPS_PATH}/lib/cmake/Qt6"$|d' \
+  -e '/Have to verify it down here/,/^endif()$/d' \
+  CMakeModules/DuckStationDependencies.cmake
+grep -q 'Using incorrect Qt library' CMakeModules/DuckStationDependencies.cmake \
+  && error "Failed to patch DuckStationDependencies.cmake - upstream layout may have changed"
 
 echo "Building DuckStation..."
 rm -rf build-release
