@@ -116,9 +116,22 @@ ninja -C build-release || error "Build failed"
 binary="$HOME/duckstation/build-release/bin/duckstation-qt"
 [ -x "$binary" ] || error "Build did not produce a duckstation-qt binary at $binary"
 
+install_dir="$HOME/.local/share/l4t-megascript/duckstation"
+rm -rf "$install_dir"
+mkdir -p "$install_dir/lib" || error "Could not create install directory"
+cp -aL "$HOME/duckstation/build-release/bin/." "$install_dir/" \
+  || error "Could not copy DuckStation runtime files"
+find "$HOME/duckstation/dep/prebuilt/$deps_target/lib" -maxdepth 1 -name '*.so*' \
+  -exec cp -aL {} "$install_dir/lib/" \; \
+  || error "Could not copy DuckStation shared libraries"
+[ -e "$install_dir/lib/libbacktrace.so.0" ] || error "Could not stage libbacktrace.so.0"
+[ -x "$install_dir/duckstation-qt" ] || error "Install did not produce a duckstation-qt binary at $install_dir/duckstation-qt"
+
 sudo tee /usr/local/bin/duckstation >/dev/null <<'EOF'
 #!/bin/sh
-cd "$HOME/duckstation/build-release/bin" && exec ./duckstation-qt "$@"
+LD_LIBRARY_PATH="$HOME/.local/share/l4t-megascript/duckstation/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH
+cd "$HOME/.local/share/l4t-megascript/duckstation" && exec ./duckstation-qt "$@"
 EOF
 sudo chmod 755 /usr/local/bin/duckstation
 

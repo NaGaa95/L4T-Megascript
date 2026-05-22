@@ -46,6 +46,7 @@ Raspbian | Debian | Ubuntu)
 Fedora)
   sudo dnf install -y git cmake ninja-build SDL2-devel pkg-config gtk3-devel clang lld \
     xdg-desktop-portal openssl openssl-devel libstdc++-static boost-devel boost-static \
+    qt6-qtsvg-devel \
     || error "Could not install dependencies!"
   ;;
 *)
@@ -89,9 +90,19 @@ esac
 binary="$HOME/Vita3K/build/linux-ninja-clang/bin/Release/Vita3K"
 [ -x "$binary" ] || error "Build did not produce a Vita3K binary at $binary"
 
+install_dir="$HOME/.local/share/l4t-megascript/vita3k"
+rm -rf "$install_dir"
+mkdir -p "$install_dir" || error "Could not create install directory"
+cp -aL "$HOME/Vita3K/build/linux-ninja-clang/bin/Release/." "$install_dir/" \
+  || error "Could not copy Vita3K runtime files"
+[ -d "$HOME/Vita3K/data" ] \
+  && cp -aL "$HOME/Vita3K/data" "$install_dir/" \
+  || error "Could not copy Vita3K data files"
+[ -x "$install_dir/Vita3K" ] || error "Install did not produce a Vita3K binary at $install_dir/Vita3K"
+
 sudo tee /usr/local/bin/vita3k >/dev/null <<'EOF'
 #!/bin/sh
-cd "$HOME/Vita3K/build/linux-ninja-clang/bin/Release" && exec ./Vita3K "$@"
+cd "$HOME/.local/share/l4t-megascript/vita3k" && exec ./Vita3K "$@"
 EOF
 sudo chmod 755 /usr/local/bin/vita3k
 

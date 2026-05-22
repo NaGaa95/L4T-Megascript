@@ -61,7 +61,7 @@ Fedora)
     boost-devel libzip-devel libzip-tools glslang-devel libgcrypt-devel glm-devel \
     gtk3-devel glib2-devel libpng-devel libjpeg-turbo-devel \
     pulseaudio-libs-devel libsecret-devel systemd-devel libtool nasm \
-    fmt-devel SDL2-devel pugixml-devel rapidjson-devel \
+    fmt-devel SDL2-devel SDL3-devel bluez-libs-devel libusb1-devel pugixml-devel rapidjson-devel \
     || error "Could not install dependencies!"
   ;;
 *)
@@ -129,9 +129,24 @@ cmake --build build_arm -j$(nproc) || error "Build failed"
 binary="$HOME/Cemu/bin/Cemu_release"
 [ -x "$binary" ] || error "Build did not produce a Cemu binary at $binary"
 
+install_dir="$HOME/.local/share/l4t-megascript/cemu"
+rm -rf "$install_dir"
+mkdir -p "$install_dir" || error "Could not create install directory"
+cp -aL "$HOME/Cemu/bin/." "$install_dir/" \
+  || error "Could not copy Cemu runtime files"
+wx_lib_dir="$HOME/wxWidgets/build-gtk/lib"
+if compgen -G "$wx_lib_dir/libwx*.so*" >/dev/null; then
+  mkdir -p "$install_dir/lib" || error "Could not create Cemu library directory"
+  cp -aL "$wx_lib_dir"/libwx*.so* "$install_dir/lib/" \
+    || error "Could not copy wxWidgets runtime libraries"
+fi
+[ -x "$install_dir/Cemu_release" ] || error "Install did not produce a Cemu binary at $install_dir/Cemu_release"
+
 sudo tee /usr/local/bin/cemu >/dev/null <<'EOF'
 #!/bin/sh
-cd "$HOME/Cemu/bin" && exec ./Cemu_release "$@"
+LD_LIBRARY_PATH="$HOME/.local/share/l4t-megascript/cemu/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH
+cd "$HOME/.local/share/l4t-megascript/cemu" && exec ./Cemu_release "$@"
 EOF
 sudo chmod 755 /usr/local/bin/cemu
 

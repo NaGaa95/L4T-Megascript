@@ -10,8 +10,7 @@ clear -x
 echo "Switchdeck script successfully started!"
 echo "Credits: https://github.com/SildurFX/Switchdeck"
 echo
-echo "Note: Steam installer for Switchroot. Box64/Box86 + Steam x86 wrapped"
-echo "for native-feeling launching from the Switch's app menu."
+echo "Switchdeck Script"
 sleep 4
 
 case "$architecture" in

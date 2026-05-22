@@ -56,7 +56,6 @@ fi
 
 echo "Configuring CMake..."
 cmake -H. -Bbuild-cmake -GNinja -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
   -DCMAKE_C_FLAGS=-mcpu=native \
   -DCMAKE_CXX_FLAGS=-mcpu=native \
   || error "CMake configure failed"
@@ -71,9 +70,18 @@ cmake --build build-cmake -j$(nproc) || error "Build failed"
 binary="$HOME/Shipwright/build-cmake/soh/soh.elf"
 [ -x "$binary" ] || error "Build did not produce a soh.elf binary at $binary"
 
+install_dir="$HOME/.local/share/l4t-megascript/shipwright"
+rm -rf "$install_dir"
+mkdir -p "$install_dir" || error "Could not create install directory"
+cp -aL "$HOME/Shipwright/build-cmake/soh/." "$install_dir/" \
+  || error "Could not copy Shipwright runtime files"
+find "$install_dir" -type d -name CMakeFiles -prune -exec rm -rf {} + 2>/dev/null || true
+find "$install_dir" -type f \( -name CMakeCache.txt -o -name cmake_install.cmake -o -name build.ninja -o -name rules.ninja -o -name .ninja_deps -o -name .ninja_log \) -delete 2>/dev/null || true
+[ -x "$install_dir/soh.elf" ] || error "Install did not produce a soh.elf binary at $install_dir/soh.elf"
+
 sudo tee /usr/local/bin/shipwright >/dev/null <<'EOF'
 #!/bin/sh
-cd "$HOME/Shipwright/build-cmake/soh" && exec ./soh.elf "$@"
+cd "$HOME/.local/share/l4t-megascript/shipwright" && exec ./soh.elf "$@"
 EOF
 sudo chmod 755 /usr/local/bin/shipwright
 

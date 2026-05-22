@@ -85,9 +85,16 @@ cmake --build build || error "Build failed"
 binary="$HOME/rpcs3/build/bin/rpcs3"
 [ -x "$binary" ] || error "Build did not produce an rpcs3 binary at $binary"
 
+install_dir="$HOME/.local/share/l4t-megascript/rpcs3"
+rm -rf "$install_dir"
+mkdir -p "$install_dir" || error "Could not create install directory"
+cp -aL "$HOME/rpcs3/build/bin/." "$install_dir/" \
+  || error "Could not copy RPCS3 runtime files"
+[ -x "$install_dir/rpcs3" ] || error "Install did not produce an rpcs3 binary at $install_dir/rpcs3"
+
 sudo tee /usr/local/bin/rpcs3 >/dev/null <<'EOF'
 #!/bin/sh
-cd "$HOME/rpcs3/build/bin" && exec ./rpcs3 "$@"
+cd "$HOME/.local/share/l4t-megascript/rpcs3" && exec ./rpcs3 "$@"
 EOF
 sudo chmod 755 /usr/local/bin/rpcs3
 

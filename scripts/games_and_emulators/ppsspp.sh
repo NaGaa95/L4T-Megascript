@@ -46,9 +46,19 @@ make -j$(nproc) || error "Build failed"
 binary="$HOME/ppsspp/build/PPSSPPSDL"
 [ -x "$binary" ] || error "Build did not produce a PPSSPPSDL binary at $binary"
 
+install_dir="$HOME/.local/share/l4t-megascript/ppsspp"
+rm -rf "$install_dir"
+mkdir -p "$install_dir" || error "Could not create install directory"
+install -Dm755 "$binary" "$install_dir/PPSSPPSDL" \
+  || error "Could not install PPSSPP binary"
+[ -d "$HOME/ppsspp/assets" ] \
+  && cp -aL "$HOME/ppsspp/assets" "$install_dir/" \
+  || error "Could not copy PPSSPP assets"
+[ -x "$install_dir/PPSSPPSDL" ] || error "Install did not produce a PPSSPPSDL binary at $install_dir/PPSSPPSDL"
+
 sudo tee /usr/local/bin/ppsspp >/dev/null <<'EOF'
 #!/bin/sh
-cd "$HOME/ppsspp/build" && exec ./PPSSPPSDL "$@"
+cd "$HOME/.local/share/l4t-megascript/ppsspp" && exec ./PPSSPPSDL "$@"
 EOF
 sudo chmod 755 /usr/local/bin/ppsspp
 

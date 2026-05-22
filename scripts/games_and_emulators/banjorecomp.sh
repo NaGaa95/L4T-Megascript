@@ -116,9 +116,19 @@ cmake --build build-cmake --target BanjoRecompiled -j$(nproc) \
 binary="$HOME/BanjoRecomp/build-cmake/BanjoRecompiled"
 [ -x "$binary" ] || error "Build did not produce a BanjoRecompiled binary at $binary"
 
+install_dir="$HOME/.local/share/l4t-megascript/banjorecomp"
+rm -rf "$install_dir"
+mkdir -p "$install_dir" || error "Could not create install directory"
+install -Dm755 "$binary" "$install_dir/BanjoRecompiled" \
+  || error "Could not install BanjoRecompiled binary"
+[ -d "$HOME/BanjoRecomp/assets" ] \
+  && cp -aL "$HOME/BanjoRecomp/assets" "$install_dir/" \
+  || error "Could not copy BanjoRecomp assets"
+[ -d "$HOME/BanjoRecomp/mods" ] && cp -aL "$HOME/BanjoRecomp/mods" "$install_dir/"
+
 sudo tee /usr/local/bin/banjorecompiled >/dev/null <<'EOF'
 #!/bin/sh
-cd "$HOME/BanjoRecomp" && exec ./build-cmake/BanjoRecompiled "$@"
+cd "$HOME/.local/share/l4t-megascript/banjorecomp" && exec ./BanjoRecompiled "$@"
 EOF
 sudo chmod 755 /usr/local/bin/banjorecompiled
 

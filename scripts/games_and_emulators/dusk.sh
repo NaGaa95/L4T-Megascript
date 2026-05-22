@@ -32,7 +32,7 @@ Raspbian | Debian | Ubuntu)
 Fedora)
   sudo dnf install -y --refresh @development-tools git \
     cmake vulkan-headers ninja-build clang-devel llvm-devel libpng-devel \
-    turbojpeg-devel \
+    turbojpeg-devel rust cargo \
     || error "Could not install dependencies!"
   ;;
 *)
@@ -63,11 +63,17 @@ build_dir="$HOME/dusk/build/linux-default-relwithdebinfo"
 binary="$build_dir/dusklight"
 [ -x "$binary" ] || error "Build did not produce a dusklight binary at $binary"
 
-cp -r "$HOME/dusk/res" "$build_dir/"
+install_dir="$HOME/.local/share/l4t-megascript/dusk"
+rm -rf "$install_dir"
+mkdir -p "$install_dir" || error "Could not create install directory"
+install -Dm755 "$binary" "$install_dir/dusklight" \
+  || error "Could not install dusklight binary"
+cp -aL "$HOME/dusk/res" "$install_dir/" \
+  || error "Could not copy Dusk runtime files"
 
-sudo tee /usr/local/bin/dusk >/dev/null <<EOF
+sudo tee /usr/local/bin/dusk >/dev/null <<'EOF'
 #!/bin/sh
-cd "$build_dir" && exec ./dusklight "\$@"
+cd "$HOME/.local/share/l4t-megascript/dusk" && exec ./dusklight "$@"
 EOF
 sudo chmod 755 /usr/local/bin/dusk
 

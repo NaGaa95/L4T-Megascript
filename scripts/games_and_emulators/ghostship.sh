@@ -73,9 +73,18 @@ cmake --build build-cmake -j$(nproc) || error "Build failed"
 binary="$HOME/Ghostship/build-cmake/Ghostship"
 [ -x "$binary" ] || error "Build did not produce a Ghostship binary at $binary"
 
+install_dir="$HOME/.local/share/l4t-megascript/ghostship"
+rm -rf "$install_dir"
+mkdir -p "$install_dir" || error "Could not create install directory"
+cp -aL "$HOME/Ghostship/build-cmake/." "$install_dir/" \
+  || error "Could not copy Ghostship runtime files"
+find "$install_dir" -type d -name CMakeFiles -prune -exec rm -rf {} + 2>/dev/null || true
+find "$install_dir" -type f \( -name CMakeCache.txt -o -name cmake_install.cmake -o -name build.ninja -o -name rules.ninja -o -name .ninja_deps -o -name .ninja_log \) -delete 2>/dev/null || true
+[ -x "$install_dir/Ghostship" ] || error "Install did not produce a Ghostship binary at $install_dir/Ghostship"
+
 sudo tee /usr/local/bin/ghostship >/dev/null <<'EOF'
 #!/bin/sh
-cd "$HOME/Ghostship/build-cmake" && exec ./Ghostship "$@"
+cd "$HOME/.local/share/l4t-megascript/ghostship" && exec ./Ghostship "$@"
 EOF
 sudo chmod 755 /usr/local/bin/ghostship
 

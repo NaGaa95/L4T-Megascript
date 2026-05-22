@@ -73,9 +73,18 @@ cmake --build build-cmake -j$(nproc) || error "Build failed"
 binary="$HOME/Starship/build-cmake/Starship"
 [ -x "$binary" ] || error "Build did not produce a Starship binary at $binary"
 
+install_dir="$HOME/.local/share/l4t-megascript/starship"
+rm -rf "$install_dir"
+mkdir -p "$install_dir" || error "Could not create install directory"
+cp -aL "$HOME/Starship/build-cmake/." "$install_dir/" \
+  || error "Could not copy Starship runtime files"
+find "$install_dir" -type d -name CMakeFiles -prune -exec rm -rf {} + 2>/dev/null || true
+find "$install_dir" -type f \( -name CMakeCache.txt -o -name cmake_install.cmake -o -name build.ninja -o -name rules.ninja -o -name .ninja_deps -o -name .ninja_log \) -delete 2>/dev/null || true
+[ -x "$install_dir/Starship" ] || error "Install did not produce a Starship binary at $install_dir/Starship"
+
 sudo tee /usr/local/bin/starship >/dev/null <<'EOF'
 #!/bin/sh
-cd "$HOME/Starship/build-cmake" && exec ./Starship "$@"
+cd "$HOME/.local/share/l4t-megascript/starship" && exec ./Starship "$@"
 EOF
 sudo chmod 755 /usr/local/bin/starship
 
