@@ -112,9 +112,16 @@ cmake --build ./out/build/linux-release --target UnleashedRecomp \
 binary="$HOME/UnleashedRecomp/out/build/linux-release/UnleashedRecomp/UnleashedRecomp"
 [ -x "$binary" ] || error "Build did not produce an UnleashedRecomp binary at $binary"
 
+install_dir="$HOME/.local/share/l4t-megascript/unleashedrecomp"
+rm -rf "$install_dir"
+mkdir -p "$install_dir" || error "Could not create install directory"
+cp -aL "$HOME/UnleashedRecomp/out/build/linux-release/UnleashedRecomp/." "$install_dir/" \
+  || error "Could not copy UnleashedRecomp runtime files"
+[ -x "$install_dir/UnleashedRecomp" ] || error "Install did not produce an UnleashedRecomp binary at $install_dir/UnleashedRecomp"
+
 sudo tee /usr/local/bin/unleashedrecomp >/dev/null <<'EOF'
 #!/bin/sh
-cd "$HOME/UnleashedRecomp/out/build/linux-release/UnleashedRecomp" && exec ./UnleashedRecomp "$@"
+cd "$HOME/.local/share/l4t-megascript/unleashedrecomp" && exec ./UnleashedRecomp "$@"
 EOF
 sudo chmod 755 /usr/local/bin/unleashedrecomp
 

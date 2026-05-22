@@ -108,9 +108,16 @@ cmake --build ./out/build/linux-release --target MarathonRecomp \
 binary="$HOME/MarathonRecomp/out/build/linux-release/MarathonRecomp/MarathonRecomp"
 [ -x "$binary" ] || error "Build did not produce a MarathonRecomp binary at $binary"
 
+install_dir="$HOME/.local/share/l4t-megascript/marathonrecomp"
+rm -rf "$install_dir"
+mkdir -p "$install_dir" || error "Could not create install directory"
+cp -aL "$HOME/MarathonRecomp/out/build/linux-release/MarathonRecomp/." "$install_dir/" \
+  || error "Could not copy MarathonRecomp runtime files"
+[ -x "$install_dir/MarathonRecomp" ] || error "Install did not produce a MarathonRecomp binary at $install_dir/MarathonRecomp"
+
 sudo tee /usr/local/bin/marathonrecomp >/dev/null <<'EOF'
 #!/bin/sh
-cd "$HOME/MarathonRecomp/out/build/linux-release/MarathonRecomp" && exec ./MarathonRecomp "$@"
+cd "$HOME/.local/share/l4t-megascript/marathonrecomp" && exec ./MarathonRecomp "$@"
 EOF
 sudo chmod 755 /usr/local/bin/marathonrecomp
 
