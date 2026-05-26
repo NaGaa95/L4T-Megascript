@@ -90,6 +90,8 @@ fn="Xenia Edge";;d="Xbox 360 emulator with experimental ARM64 support";;sn="xeni
 
 # fn="SRB2Kart";;d="A kart racing game using SRB2 as a base";;sn="SRB2Kart.sh";;f="games_and_emulators"
 
+fn="PortMaster";;d='PortMaster is a simple GUI tool designed to facilitate the downloading and installation of game ports for linux handheld devices.';;sn="portmaster.sh";;f="games_and_emulators"
+
 fn="Thonny Python IDE";;d="Thonny is an integrated development environment for Python that is designed for beginners";;sn="thonny.sh";;f="development";;blacklist="fedora"
 
 fn="VSCode";;d="Code editor redefined and optimized for building/debugging modern web + cloud applications";;sn="vscode.sh";;f="development";;blacklist="bionic"
