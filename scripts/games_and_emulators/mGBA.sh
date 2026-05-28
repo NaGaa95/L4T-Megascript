@@ -13,35 +13,20 @@ sleep 3
 
 echo "Installing dependencies..."
 
-case "$__os_id" in
-Raspbian | Debian | Ubuntu)
-  case "$__os_codename" in
-  bionic)
-    ubuntu_ppa_installer "theofficialgman/opt-qt-5.15.2-bionic-arm"
-    ppa_installer
-    ubuntu_ppa_installer "theofficialgman/melonds-depends" || error "PPA failed to install"
-    ubuntu_ppa_installer "theofficialgman/cmake-bionic" || error "PPA failed to install"
-    ubuntu_ppa_installer "ubuntu-toolchain-r/test" || error "PPA failed to install"
-    sudo apt install -y cmake gcc-13 g++-13 qt515base qt515multimedia qt515gamepad \
-      || error "Could not install dependencies"
-    ;;
-  *)
-    package_available qt5-default
-    if [[ $? == "0" ]]; then
-      sudo apt install -y qt5-default qtbase5-private-dev qtmultimedia5-dev \
-        || error "Could not install dependencies"
-    else
-      sudo apt install -y qtbase5-dev qtchooser qtbase5-private-dev qtmultimedia5-dev \
-        || error "Could not install dependencies"
-    fi
-    sudo apt install -y cmake gcc g++ || error "Could not install dependencies"
-    ;;
-  esac
+case "$__os_codename" in
+bionic | focal)
+  echo "Adding QT6 repo..."
+  #it's not redneck if it works.
+  #TODO: get https://github.com/oskirby/qt6-packaging/issues/2 resolved, or just build QT6 ourselves
+  ubuntu_ppa_installer "okirby/qt6-backports" || error "PPA failed to install"
+  ubuntu_ppa_installer "okirby/qt6-testing" || error "PPA failed to install"
+  ubuntu_ppa_installer "theofficialgman/melonds-depends" || error "PPA failed to install"
+  ubuntu_ppa_installer "theofficialgman/cmake-bionic" || error "PPA failed to install"
 
-  sudo apt install -y git libsdl2-2.0-0 libsdl2-dev ffmpeg libelf-dev \
-    libepoxy-dev libzip-dev zipcmp zipmerge ziptool libedit-dev libjson-c-dev \
-    libsqlite3-dev liblua5.3-dev libpng-dev zlib1g-dev \
-    || error "Could not install dependencies"
+  echo "Adding Ubuntu Toolchain Test PPA to install GCC 11..."
+  ubuntu_ppa_installer "ubuntu-toolchain-r/test" || error "PPA failed to install"
+
+  sudo apt install -y gcc-13 g++-13 || error "Could not install dependencies"
   ;;
 Fedora)
   sudo dnf install -y --refresh @development-tools git cmake gcc-c++ make \
@@ -53,10 +38,15 @@ Fedora)
     || error "Could not install dependencies!"
   ;;
 *)
-  echo -e "\\e[91mUnknown distro detected - please install mGBA dependencies manually following https://github.com/mgba-emu/mgba\\e[39m"
-  sleep 5
+  sudo apt install -y gcc g++ || error "Could not install dependencies"
   ;;
 esac
+
+echo "Installing dependencies..."
+sleep 1
+sudo apt-get install -y cmake git qt6-base-dev qt6-base-private-dev qt6-multimedia-dev linguist-qt6 \
+  libsdl2-2.0-0 libsdl2-dev ffmpeg libelf-dev libepoxy-dev libzip-dev zipcmp zipmerge ziptool \
+  libedit-dev libjson-c-dev libsqlite3-dev liblua5.3-dev || error "Could not install dependencies"
 
 echo "Building mGBA..."
 cd ~
