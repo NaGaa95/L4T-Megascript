@@ -77,15 +77,23 @@ cd "$HOME/.local/share/l4t-megascript/dusk" && exec ./dusklight "$@"
 EOF
 sudo chmod 755 /usr/local/bin/dusk
 
+freedesktop_dir="$HOME/dusk/platforms/freedesktop"
+icon_name="dev.twilitrealm.dusk"
 for size in 16x16 32x32 48x48 64x64 128x128 256x256 512x512 1024x1024; do
-  sudo install -Dm644 "$HOME/dusk/platforms/freedesktop/$size/apps/dusklight.png" \
-    "/usr/share/icons/hicolor/$size/apps/dusklight.png"
+  icon_src="$freedesktop_dir/$size/apps/$icon_name.png"
+  sudo install -Dm644 "$icon_src" "/usr/share/icons/hicolor/$size/apps/$icon_name.png" \
+    || error "Could not install Dusk $size icon"
 done
+sudo gtk-update-icon-cache /usr/share/icons/hicolor 2>/dev/null || true
 
-sudo install -Dm644 "$HOME/dusk/platforms/freedesktop/dusklight.desktop" \
-  /usr/local/share/applications/dusklight.desktop
-sudo sed -i 's|^Exec=.*|Exec=/usr/local/bin/dusk %f|' \
-  /usr/local/share/applications/dusklight.desktop
+desktop_file="/usr/local/share/applications/dusklight.desktop"
+desktop_src="$freedesktop_dir/$icon_name.desktop"
+sudo install -Dm644 "$desktop_src" "$desktop_file" \
+  || error "Could not install Dusk desktop file"
+sudo sed -i \
+  -e 's|^Exec=.*|Exec=/usr/local/bin/dusk %f|' \
+  -e "s|^Icon=.*|Icon=$icon_name|" \
+  "$desktop_file"
 
 echo "Done!"
 echo "Sending you back to the main menu..."

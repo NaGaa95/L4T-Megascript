@@ -62,14 +62,25 @@ python3 xenia-build.py build --config=Release --target=xenia-app || error "Build
 binary="$HOME/xenia-edge/build/bin/Linux/Release/xenia_edge"
 [ -x "$binary" ] || error "Build did not produce a Xenia Edge binary at $binary"
 
+install_dir="$HOME/.local/share/l4t-megascript/xenia-edge"
+rm -rf "$install_dir"
+mkdir -p "$install_dir" || error "Could not create install directory"
+cp -aL "$HOME/xenia-edge/build/bin/Linux/Release/." "$install_dir/" \
+  || error "Could not copy Xenia Edge runtime files"
+if [ -f "$HOME/xenia-edge/assets/icon/256.png" ]; then
+  install -Dm644 "$HOME/xenia-edge/assets/icon/256.png" "$install_dir/assets/icon/256.png" \
+    || error "Could not copy Xenia Edge icon"
+fi
+[ -x "$install_dir/xenia_edge" ] || error "Install did not produce a Xenia Edge binary at $install_dir/xenia_edge"
+
 sudo tee /usr/local/bin/xenia_edge >/dev/null <<'EOF'
 #!/bin/sh
-cd "$HOME/xenia-edge" && exec "$HOME/xenia-edge/build/bin/Linux/Release/xenia_edge" "$@"
+cd "$HOME/.local/share/l4t-megascript/xenia-edge" && exec ./xenia_edge "$@"
 EOF
 sudo chmod 755 /usr/local/bin/xenia_edge
 
-if [ -f "$HOME/xenia-edge/assets/icon/256.png" ]; then
-  sudo install -Dm644 "$HOME/xenia-edge/assets/icon/256.png" /usr/share/pixmaps/xenia_edge.png
+if [ -f "$install_dir/assets/icon/256.png" ]; then
+  sudo install -Dm644 "$install_dir/assets/icon/256.png" /usr/share/pixmaps/xenia_edge.png
   icon_name="xenia_edge"
 else
   icon_name="applications-games"

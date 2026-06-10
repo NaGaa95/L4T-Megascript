@@ -15,9 +15,34 @@ echo "Installing dependencies..."
 
 case "$__os_id" in
 Raspbian | Debian | Ubuntu)
-  sudo apt install -y build-essential git cmake \
+  sudo apt install -y build-essential git cmake curl \
     qt6-base-dev qt6-base-private-dev libalut-dev libevdev-dev libsqlite3-dev \
     || error "Could not install dependencies"
+
+  qt_version=6.11.1
+  if [ "$(/usr/local/qt6/bin/qmake -query QT_VERSION 2>/dev/null)" != "$qt_version" ]; then
+    qt_archive=""
+    for candidate in \
+      "$PWD/assets/qt/qt-$qt_version-aarch64.tar.xz" \
+      "$HOME/L4T-Megascript-master/assets/qt/qt-$qt_version-aarch64.tar.xz" \
+      "$HOME/L4T-Megascript/assets/qt/qt-$qt_version-aarch64.tar.xz"; do
+      [ -f "$candidate" ] && { qt_archive="$candidate"; break; }
+    done
+    if [ -n "$qt_archive" ]; then
+      echo "Using local Qt archive: $qt_archive"
+    else
+      echo "Downloading prebuilt Qt $qt_version for aarch64..."
+      curl -L --fail \
+        "https://raw.githubusercontent.com/$repository_username/L4T-Megascript/$repository_branch/assets/qt/qt-$qt_version-aarch64.tar.xz" \
+        -o /tmp/qt6-aarch64.tar.xz || error "Failed to download prebuilt Qt6"
+      qt_archive=/tmp/qt6-aarch64.tar.xz
+    fi
+    sudo mkdir -p /usr/local/qt6
+    sudo tar -xJf "$qt_archive" -C /usr/local/qt6 --strip-components=1 \
+      || error "Failed to extract Qt6"
+    [ "$qt_archive" = /tmp/qt6-aarch64.tar.xz ] && rm "$qt_archive"
+  fi
+  export PATH="/usr/local/qt6/bin:/usr/local/qt6/libexec:$PATH"
   ;;
 Fedora)
   sudo dnf install -y --refresh @development-tools git cmake \
@@ -43,6 +68,13 @@ cmake_extra_args=()
 cmake_c_flags="-mcpu=native -Wno-error=implicit-function-declaration -Wno-error=int-conversion"
 cmake_cxx_flags="-mcpu=native"
 case "$__os_id" in
+Raspbian | Debian | Ubuntu)
+  cmake_extra_args+=(
+    "-DCMAKE_PREFIX_PATH=/usr/local/qt6"
+    "-DCMAKE_INSTALL_RPATH=/usr/local/qt6/lib"
+    "-DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON"
+  )
+  ;;
 Fedora)
   cmake_extra_args+=("-DCMAKE_DISABLE_FIND_PACKAGE_ZLIB=ON")
   ;;

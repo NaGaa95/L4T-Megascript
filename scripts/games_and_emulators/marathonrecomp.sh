@@ -12,6 +12,7 @@ echo "Source: https://github.com/sonicnext-dev/MarathonRecomp"
 sleep 3
 
 vcpkg_triplet="arm64-linux"
+marathon_branch="fix-linux-build"
 
 echo "Installing dependencies..."
 
@@ -35,11 +36,20 @@ Fedora)
   ;;
 esac
 
-echo "Cloning MarathonRecomp..."
+echo "Cloning MarathonRecomp ($marathon_branch branch)..."
 cd ~
-git clone --recurse-submodules -j$(nproc) https://github.com/sonicnext-dev/MarathonRecomp.git
-cd MarathonRecomp
-git pull --recurse-submodules -j$(nproc) || error "Could not pull latest source"
+if [ -d MarathonRecomp/.git ]; then
+  cd MarathonRecomp
+  git fetch origin "$marathon_branch" || error "Could not fetch MarathonRecomp $marathon_branch branch"
+  git checkout "$marathon_branch" || error "Could not switch to MarathonRecomp $marathon_branch branch"
+  git pull --ff-only --recurse-submodules -j$(nproc) origin "$marathon_branch" || error "Could not pull latest MarathonRecomp $marathon_branch source"
+elif [ -e MarathonRecomp ]; then
+  error "$HOME/MarathonRecomp exists but is not a git checkout"
+else
+  git clone --recurse-submodules -j$(nproc) -b "$marathon_branch" https://github.com/sonicnext-dev/MarathonRecomp.git \
+    || error "Could not clone MarathonRecomp $marathon_branch branch"
+  cd MarathonRecomp
+fi
 git submodule update --init --recursive || error "Could not update submodules"
 
 private_dir="$HOME/MarathonRecomp/MarathonRecompLib/private"

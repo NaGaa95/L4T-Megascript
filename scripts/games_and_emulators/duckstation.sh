@@ -90,11 +90,16 @@ rm -rf "dep/prebuilt/$deps_target/lib/cmake/Qt6"* \
        "dep/prebuilt/$deps_target/include/Qt"* \
        "dep/prebuilt/$deps_target/lib/libQt6"*
 sed -i \
+  -e 's|^set(CMAKE_PREFIX_PATH "${DEPS_PATH}")|list(PREPEND CMAKE_PREFIX_PATH "${DEPS_PATH}")|' \
   -e 's|Qt6 [0-9.]\+ REQUIRED|Qt6 6.10.0 REQUIRED|g' \
   -e '\|NO_DEFAULT_PATH PATHS "${DEPS_PATH}/lib/cmake/Qt6"$|d' \
-  -e '/Have to verify it down here/,/^endif()$/d' \
+  -e 's|SDL3 Qt6)|SDL3)|' \
   CMakeModules/DuckStationDependencies.cmake
-grep -q 'Using incorrect Qt library' CMakeModules/DuckStationDependencies.cmake \
+grep -q 'SDL3 Qt6' CMakeModules/DuckStationDependencies.cmake \
+  && error "Failed to patch DuckStationDependencies.cmake - upstream layout may have changed"
+grep -q 'NO_DEFAULT_PATH PATHS "${DEPS_PATH}/lib/cmake/Qt6"' CMakeModules/DuckStationDependencies.cmake \
+  && error "Failed to patch DuckStationDependencies.cmake - upstream layout may have changed"
+grep -q '^set(CMAKE_PREFIX_PATH "${DEPS_PATH}")' CMakeModules/DuckStationDependencies.cmake \
   && error "Failed to patch DuckStationDependencies.cmake - upstream layout may have changed"
 
 echo "Building DuckStation..."
@@ -102,6 +107,9 @@ rm -rf build-release
 cmake -B build-release \
   -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
   -DCMAKE_PREFIX_PATH=/usr/local/qt6 \
+  -DCMAKE_BUILD_RPATH=/usr/local/qt6/lib \
+  -DCMAKE_INSTALL_RPATH=/usr/local/qt6/lib \
+  -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=ON \
   -DCMAKE_EXE_LINKER_FLAGS_INIT="-fuse-ld=lld" \
   -DCMAKE_MODULE_LINKER_FLAGS_INIT="-fuse-ld=lld" \
   -DCMAKE_SHARED_LINKER_FLAGS_INIT="-fuse-ld=lld" \
@@ -129,7 +137,7 @@ find "$HOME/duckstation/dep/prebuilt/$deps_target/lib" -maxdepth 1 -name '*.so*'
 
 sudo tee /usr/local/bin/duckstation >/dev/null <<'EOF'
 #!/bin/sh
-LD_LIBRARY_PATH="$HOME/.local/share/l4t-megascript/duckstation/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+LD_LIBRARY_PATH="$HOME/.local/share/l4t-megascript/duckstation/lib:/usr/local/qt6/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export LD_LIBRARY_PATH
 cd "$HOME/.local/share/l4t-megascript/duckstation" && exec ./duckstation-qt "$@"
 EOF
